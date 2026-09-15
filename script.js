@@ -1,8 +1,70 @@
-// 1. Soumission du formulaire de connexion
-document.getElementById('loginForm').addEventListener('submit', function(e) {
+// =================================================================
+// 1. IMPORTS MODULES FIREBASE (v10)
+// =================================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// =================================================================
+// 2. CONFIGURATION FIREBASE & EMAILJS
+// =================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyB40W_MNntjthCBSuuXb_oFyVF71YvTAl4",
+  authDomain: "auto-test-gordon.firebaseapp.com",
+  projectId: "auto-test-gordon",
+  storageBucket: "auto-test-gordon.firebasestorage.app",
+  messagingSenderId: "497562101003",
+  appId: "1:497562101003:web:26df89c029510e22166e0e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const EMAILJS_SERVICE_ID = "service_cu20tin";
+const EMAILJS_TEMPLATE_ID = "template_utxgj5p";
+
+// VARIABLES GLOBALES
+let meDerniersScores = null;
+let chartInstance = null;
+
+// =================================================================
+// 3. FONCTION DE SAUVEGARDE FIRESTORE
+// =================================================================
+async function sauvegarderDansFirebase(userData, scores) {
+  try {
+    console.log("Sauvegarde dans Firebase...", userData, scores);
+    
+    const docRef = await addDoc(collection(db, "resultats"), {
+      nom: userData.nom,
+      prenom: userData.prenom,
+      email: userData.email,
+      scores: {
+        passivite: scores.passivite,
+        agressivite: scores.agressivite,
+        manipulation: scores.manipulation,
+        assertivite: scores.assertivite
+      },
+      dateEnregistrement: serverTimestamp()
+    });
+
+    console.log(" Enregistrement réussi dans Firebase ! ID :", docRef.id);
+    return true;
+  } catch (erreur) {
+    console.error(" Erreur Firebase :", erreur);
+    return false;
+  }
+}
+
+// =================================================================
+// 4. SOUMISSION FORMULAIRE DE CONNEXION
+// =================================================================
+document.getElementById('loginForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
 
-    // Enregistrer l'utilisateur dans la session
     const user = {
         nom: document.getElementById('nom').value.trim(),
         prenom: document.getElementById('prenom').value.trim(),
@@ -10,34 +72,33 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     };
     sessionStorage.setItem('user', JSON.stringify(user));
 
-    // Afficher les infos utilisateur dans l'en-tête
     afficherUserInfo();
 
-    // Passer de l'écran de connexion au questionnaire
     document.getElementById('step-login').classList.add('hidden');
     document.getElementById('step-quiz').classList.remove('hidden');
 
-    // Sécurité : empécher le retour en arrière vers la connexion
     history.pushState({ step: 'quiz' }, "", location.href);
 });
 
-// Empêcher la navigation de retour arrière
+function afficherUserInfo() {
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+        const user = JSON.parse(userStr);
+        const userInfoEl = document.getElementById('userInfo');
+        if (userInfoEl) {
+            userInfoEl.textContent = `Participant : ${user.prenom} ${user.nom}`;
+        }
+    }
+}
+
+// EMPÊCHER NAVIGATION RETOUR
 window.onpopstate = function(event) {
     history.pushState(null, "", location.href);
 };
 
-// DECLARATION CRUCIALE : doit être au niveau global !
-let scoresCalcules = null; 
-let chartInstance = null;
-
-// Initialisation EmailJS
-(function() {
-    if (window.emailjs) {
-        emailjs.init("2ch1BICsb9DH4rt5C");
-    }
-})();
-
-// Liste intégrale des 60 questions
+// =================================================================
+// 5. LISTE DES 60 QUESTIONS & GRILLE D'ATTITUDES
+// =================================================================
 const questions = [
     "J’ai souvent du mal à refuser et à dire non",
     "Je suis sur(e) de mes droits, je les défends sans empiéter sur ceux des autres",
@@ -101,7 +162,6 @@ const questions = [
     "Je n'aime pas me faire mal voir."
 ];
 
-// Grille de correspondance
 const grilleAttitudes = {
     passivite: [1, 7, 15, 16, 17, 25, 26, 35, 36, 37, 50, 51, 52, 59, 60],
     agressivite: [4, 6, 10, 11, 20, 21, 28, 29, 30, 39, 40, 48, 49, 55, 56],
@@ -109,28 +169,16 @@ const grilleAttitudes = {
     assertivite: [2, 8, 14, 18, 23, 24, 27, 33, 34, 38, 43, 44, 45, 53, 58]
 };
 
-// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
     afficherUserInfo();
     genererFormulaire();
 });
 
-function afficherUserInfo() {
-    const userStr = sessionStorage.getItem('user');
-    if (userStr) {
-        const user = JSON.parse(userStr);
-        const userInfoEl = document.getElementById('userInfo');
-        if (userInfoEl) {
-            userInfoEl.textContent = `Participant : ${user.prenom} ${user.nom}`;
-        }
-    }
-}
-
 function genererFormulaire() {
     const container = document.getElementById('questionsContainer');
     if (!container) return;
     
-    container.innerHTML = ''; // Réinitialiser au cas où
+    container.innerHTML = '';
     questions.forEach((qText, index) => {
         const qNum = index + 1;
         const div = document.createElement('div');
@@ -139,10 +187,10 @@ function genererFormulaire() {
             <div class="question-text"><strong>${qNum}.</strong> ${qText}</div>
             <div class="question-options">
                 <label class="option-label">
-                    <input type="radio" name="q_${qNum}" value="vrai" required> Plutôt vrai
+                    <input type="radio" name="q_${qNum}" value="vrai"> Plutôt vrai
                 </label>
                 <label class="option-label">
-                    <input type="radio" name="q_${qNum}" value="faux" required> Plutôt faux
+                    <input type="radio" name="q_${qNum}" value="faux"> Plutôt faux
                 </label>
             </div>
         `;
@@ -150,8 +198,10 @@ function genererFormulaire() {
     });
 }
 
-// 2. Traitement de la validation du questionnaire
-document.getElementById('quizForm').addEventListener('submit', function(e) {
+// =================================================================
+// 6. VALIDATION DU QUESTIONNAIRE & SAUVEGARDE UNIFIÉE
+// =================================================================
+document.getElementById('quizForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
 
     const formData = new FormData(this);
@@ -163,6 +213,7 @@ document.getElementById('quizForm').addEventListener('submit', function(e) {
         }
     }
 
+    // Calcul EXACT des scores
     const scores = {
         passivite: calculerScoreAttitude(grilleAttitudes.passivite, reponsesVrai),
         agressivite: calculerScoreAttitude(grilleAttitudes.agressivite, reponsesVrai),
@@ -170,6 +221,14 @@ document.getElementById('quizForm').addEventListener('submit', function(e) {
         assertivite: calculerScoreAttitude(grilleAttitudes.assertivite, reponsesVrai)
     };
 
+    // Récupération de l'utilisateur stocké
+    const userStr = sessionStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : { nom: "", prenom: "", email: "" };
+
+    // Enregistrement dans Firestore avec les vrais scores calculés
+    await sauvegarderDansFirebase(user, scores);
+
+    // Affichage à l'écran et génération du graphique
     afficherRésultats(scores);
 });
 
@@ -177,81 +236,10 @@ function calculerScoreAttitude(listeQuestions, reponsesVrai) {
     return listeQuestions.filter(qNum => reponsesVrai.includes(qNum)).length;
 }
 
-// 3. Affichage de l'histogramme et masquage du formulaire
-function afficherRésultats(scores) {
-    // Masquer le formulaire de test et afficher l'écran des résultats
-    const stepQuiz = document.getElementById('step-quiz');
-    const stepResults = document.getElementById('step-results');
-
-    if (stepQuiz) stepQuiz.classList.add('hidden');
-    if (stepResults) stepResults.classList.remove('hidden');
-
-    // Affichage des scores individuels
-    const summaryEl = document.getElementById('scoresSummary');
-    if (summaryEl) {
-        summaryEl.innerHTML = `
-            <div class="score-box passivite">Passivité : <strong>${scores.passivite} / 15</strong></div>
-            <div class="score-box agressivite">Agressivité : <strong>${scores.agressivite} / 15</strong></div>
-            <div class="score-box manipulation">Manipulation : <strong>${scores.manipulation} / 15</strong></div>
-            <div class="score-box assertivite">Assertivité : <strong>${scores.assertivite} / 15</strong></div>
-        `;
-    }
-
-    // Construction de l'histogramme avec Chart.js
-    const canvas = document.getElementById('histogramCanvas');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    
-    if (chartInstance) {
-        chartInstance.destroy(); // Réinitialiser si un graphique existe déjà
-    }
-
-    chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Passivité', 'Agressivité', 'Manipulation', 'Assertivité'],
-            datasets: [{
-                label: 'Score obtenu',
-                data: [scores.passivite, scores.agressivite, scores.manipulation, scores.assertivite],
-                backgroundColor: ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71'],
-                borderColor: ['#c0392b', '#d35400', '#f39c12', '#27ae60'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 15,
-                    ticks: { stepSize: 1 },
-                    title: { display: true, text: 'Points (Nombre de "Plutôt vrai")' }
-                }
-            },
-            plugins: {
-                legend: { display: false }
-            }
-        }
-    });
-
-    // Fait défiler la page en douceur vers le haut de la zone de résultats
-    stepResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-const EMAILJS_SERVICE_ID = "service_cu20tin";
-const EMAILJS_TEMPLATE_ID = "template_2rxgsju";
-
-// Stockage temporaire des scores pour le bouton d'envoi
-let meDerniersScores = null;
-
-
 // =================================================================
-// 2. FONCTION D'AFFICHAGE DES RÉSULTATS
+// 7. AFFICHAGE DES RÉSULTATS (GRAPHIC & SYNTHÈSE)
 // =================================================================
 function afficherRésultats(scores) {
-    // Sauvegarder les scores globalement pour l'envoi différé
     meDerniersScores = scores;
 
     const stepQuiz = document.getElementById('step-quiz');
@@ -260,18 +248,24 @@ function afficherRésultats(scores) {
     if (stepQuiz) stepQuiz.classList.add('hidden');
     if (stepResults) stepResults.classList.remove('hidden');
 
-    // Affichage des scores
     const summaryEl = document.getElementById('scoresSummary');
     if (summaryEl) {
         summaryEl.innerHTML = `
-            <div class="score-box passivite">Passivité : <strong>${scores.passivite} / 15</strong></div>
-            <div class="score-box agressivite">Agressivité : <strong>${scores.agressivite} / 15</strong></div>
-            <div class="score-box manipulation">Manipulation : <strong>${scores.manipulation} / 15</strong></div>
-            <div class="score-box assertivite">Assertivité : <strong>${scores.assertivite} / 15</strong></div>
+            <div class="score-line passivite" style="margin-bottom: 8px; padding: 10px; background: #fdf2f2; border-left: 4px solid #e74c3c;">
+                🔴 <strong>Attitude Passive (Fuite) :</strong> ${scores.passivite} / 15 points
+            </div>
+            <div class="score-line agressivite" style="margin-bottom: 8px; padding: 10px; background: #fef5ed; border-left: 4px solid #e67e22;">
+                🟠 <strong>Attitude Agressive (Attaque) :</strong> ${scores.agressivite} / 15 points
+            </div>
+            <div class="score-line manipulation" style="margin-bottom: 8px; padding: 10px; background: #fcfbe6; border-left: 4px solid #f1c40f;">
+                🟡 <strong>Attitude Manipulatrice (Calcul) :</strong> ${scores.manipulation} / 15 points
+            </div>
+            <div class="score-line assertivite" style="margin-bottom: 8px; padding: 10px; background: #edfbf3; border-left: 4px solid #2ecc71;">
+                🟢 <strong>Attitude Assertive (Affirmation de soi) :</strong> ${scores.assertivite} / 15 points
+            </div>
         `;
     }
 
-    // Réinitialiser le bouton et le statut d'email
     const btnSend = document.getElementById('btnSendEmail');
     const statusEl = document.getElementById('emailStatus');
     if (btnSend) {
@@ -280,7 +274,6 @@ function afficherRésultats(scores) {
     }
     if (statusEl) statusEl.textContent = "";
 
-    // Affichage de l'histogramme Chart.js
     const canvas = document.getElementById('histogramCanvas');
     if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -306,7 +299,7 @@ function afficherRésultats(scores) {
                         beginAtZero: true,
                         max: 15,
                         ticks: { stepSize: 1 },
-                        title: { display: true, text: 'Points' }
+                        title: { display: true, text: 'Points (Nombre de "Plutôt vrai")' }
                     }
                 },
                 plugins: { legend: { display: false } }
@@ -317,18 +310,15 @@ function afficherRésultats(scores) {
     stepResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-
 // =================================================================
-// 3. ÉCOUTEUR BOUTON D'ENVOI PAR EMAIL
+// 8. ENVOI DE L'EMAIL VIA EMAILJS
 // =================================================================
-document.getElementById('btnSendEmail').addEventListener('click', function() {
-    // 1. Vérification SDK EmailJS
+document.getElementById('btnSendEmail')?.addEventListener('click', async function() {
     if (typeof emailjs === 'undefined') {
-        alert("Le service d'e-mail n'a pas pu s'initialiser. Vérifiez votre connexion ou votre bloqueur de publicité.");
+        alert("Le service d'e-mail n'a pas pu s'initialiser.");
         return;
     }
 
-    // 2. Vérification des données utilisateur
     const userStr = sessionStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
 
@@ -337,7 +327,6 @@ document.getElementById('btnSendEmail').addEventListener('click', function() {
         return;
     }
 
-    // 3. Vérification des scores
     if (!meDerniersScores) {
         alert("Aucun score n'a été trouvé à envoyer.");
         return;
@@ -347,34 +336,50 @@ document.getElementById('btnSendEmail').addEventListener('click', function() {
     const statusEl = document.getElementById('emailStatus');
 
     btn.disabled = true;
-    btn.textContent = "Envoi en cours...";
+    btn.textContent = "Génération de la capture...";
 
-    // 4. Préparation des variables à envoyer au template EmailJS
-    const templateParams = {
-        user_name: `${user.prenom || ''} ${user.nom || ''}`.trim(),
-        user_email: user.email,
-        score_passivite: meDerniersScores.passivite,
-        score_agressivite: meDerniersScores.agressivite,
-        score_manipulation: meDerniersScores.manipulation,
-        score_assertivite: meDerniersScores.assertivite
-    };
+    if (statusEl) {
+        statusEl.style.color = "black";
+        statusEl.textContent = "Génération du rendu visuel...";
+    }
 
-    // 5. Utilisation de emailjs.send (et non sendForm)
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-        .then(() => {
-            btn.textContent = "✓ Email envoyé !";
-            if (statusEl) {
-                statusEl.className = "email-status success";
-                statusEl.textContent = `Vos résultats ont été envoyés à ${user.email}`;
-            }
-        })
-        .catch((error) => {
-            console.error("Erreur EmailJS détaillée :", error);
-            btn.disabled = false;
-            btn.textContent = "✉️ Réessayer";
-            if (statusEl) {
-                statusEl.className = "email-status error";
-                statusEl.textContent = "Échec de l'envoi. Vérifiez la console (F12) pour plus de détails.";
-            }
-        });
+    try {
+        let chartImageBase64 = "";
+        const canvas = document.getElementById('histogramCanvas');
+        if (canvas) {
+            chartImageBase64 = canvas.toDataURL('image/png');
+        }
+
+        btn.textContent = "Envoi en cours...";
+
+        const templateParams = {
+            user_name: `${user.prenom || ''} ${user.nom || ''}`.trim(),
+            user_email: user.email,
+            to_email: user.email,
+            score_passivite: meDerniersScores.passivite,
+            score_agressivite: meDerniersScores.agressivite,
+            score_manipulation: meDerniersScores.manipulation,
+            score_assertivite: meDerniersScores.assertivite,
+            chart_image: chartImageBase64
+        };
+
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+
+        btn.textContent = "✓ Email envoyé !";
+        if (statusEl) {
+            statusEl.style.color = "green";
+            statusEl.className = "email-status success";
+            statusEl.textContent = `Message envoyé avec succès à ${user.email} !`;
+        }
+
+    } catch (error) {
+        console.error("Erreur EmailJS :", error);
+        btn.disabled = false;
+        btn.textContent = "✉️ Réessayer";
+        if (statusEl) {
+            statusEl.style.color = "red";
+            statusEl.className = "email-status error";
+            statusEl.textContent = "Échec de l'envoi : " + JSON.stringify(error);
+        }
+    }
 });

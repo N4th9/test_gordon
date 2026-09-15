@@ -122,7 +122,6 @@ h1 { color: #2c3e50; margin-bottom: 8px; }
 #userInfo { font-weight: bold; color: #3498db; margin-bottom: 6px; }
 .instructions { color: #7f8c8d; font-size: 0.95em; }
 
-/* Question Row */
 .question-card {
     padding: 16px;
     border-bottom: 1px solid #ecf0f1;
@@ -155,7 +154,6 @@ h1 { color: #2c3e50; margin-bottom: 8px; }
     cursor: pointer;
 }
 
-/* Boutons */
 .actions {
     text-align: center;
     margin-top: 30px;
@@ -182,7 +180,6 @@ h1 { color: #2c3e50; margin-bottom: 8px; }
 
 .btn-print:hover { background-color: #2980b9; }
 
-/* Histogramme & Résultats */
 .hidden { display: none; }
 
 .results-card {

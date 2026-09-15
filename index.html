@@ -4,30 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto-test de Gordon</title>
-    <link rel="icon" href="/images/glass.svg">
+    <link rel="icon" href="glass.svg">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-</script>
 </head>
+
+<script type="text/javascript">
+    (function() {
+        emailjs.init("2ch1BICsb9DH4rt5C");
+    })();
+</script>
+
 <body>
     <div class="container">
         <section id="step-login" class="screen">
             <h2>Bienvenue</h2>
             <p class="subtitle">Veuillez renseigner vos informations pour démarrer l'auto-test.</p>
-
             <form id="loginForm">
                 <div class="input-group">
                     <label for="nom">Nom</label>
-                    <input type="text" id="nom" required placeholder="Ex. Dupont">
+                    <input type="text" id="nom">
                 </div>
                 <div class="input-group">
                     <label for="prenom">Prénom</label>
-                    <input type="text" id="prenom" required placeholder="Ex. Jean">
+                    <input type="text" id="prenom">
                 </div>
                 <div class="input-group">
                     <label for="email">Adresse e-mail</label>
-                    <input type="email" id="email" required placeholder="jean.dupont@example.com">
+                    <input type="email" id="email" >
                 </div>
                 <button type="submit" class="btn">Commencer le test</button>
             </form>
@@ -37,7 +42,11 @@
             <header>
                 <h1>Auto-test de Gordon</h1>
                 <p id="userInfo"></p>
-                <p class="instructions">Répondez spontanément aux 60 affirmations ci-dessous.</p>
+                <p class="instructions">Répondez aux 60 questions suivantes le plus spontanément possible, sans chercher l’exactitude absolue et la vérité profonde.</p>
+                <p>Cet autodiagnostic est à considérer comme un test de personnalité à valeur indicative. Il vous décrit tel que vous vous voyez « ici et maintenant ».</p>
+                <p>Malgré son côté aléatoire, il constitue un point de départ pour une réflexion sur vos comportements.</p>
+                <p>Il vous donne une indication sur l’image que vous offrez aux autres. Si une question vous laisse perplexe, laissez-là sans réponse. </p>
+                <p>La réponse « plutôt vrai » signifie que vous reconnaissez un de vos comportements familiers; la réponse « plutôt faux » que vous avez rarement recourt à ce type de comportement : mettre une croix dans la colonne choisie.</p>
             </header>
 
             <form id="quizForm">
@@ -49,24 +58,17 @@
         </section>
 
         <section id="step-results" class="screen hidden">
-    <h2>Résultats de votre évaluation</h2>
-    
-    <div class="chart-wrapper">
-        <canvas id="histogramCanvas"></canvas>
-    </div>
-
-    <div id="scoresSummary" class="scores-grid"></div>
-
-    <!-- Bloc de demande d'envoi par email -->
-    <div id="emailConfirmationBlock" class="email-confirm-card">
-        <p>Souhaitez-vous recevoir la synthèse de vos résultats par e-mail ?</p>
-        <button id="btnSendEmail" class="btn-email">📧 Recevoir par e-mail</button>
-        <p id="emailStatus" class="email-status"></p>
+            <h2>Résultats de votre évaluation</h2>
+            <div class="chart-wrapper">
+                <canvas id="histogramCanvas"></canvas>
+            </div>
+            <div id="scoresSummary" class="scores-grid"></div>
+            <div id="emailConfirmationBlock" class="email-confirm-card">
+            <p>Souhaitez-vous recevoir la synthèse de vos résultats par e-mail ?</p>
+            <button id="btnSendEmail" class="btn-email">📧 Recevoir par e-mail</button>
+            <p id="emailStatus" class="email-status"></p>
     </div>
 </section>
-
-    </div>
-
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
